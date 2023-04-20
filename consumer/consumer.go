@@ -2,16 +2,26 @@ package main
 
 import (
 	"context"
-	"time"
 	"github.com/segmentio/kafka-go"
 	"fmt"
 )
-
+const (
+	topic = "my-topic"
+	broker = "localhost:9092"
+)
 
 func main() {
-	conn, _ := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", "my-topic", 0)
-	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
+	ctx := context.Background()
+	r := kafka.NewReader(kafka.ReaderConfig{
+		Brokers: []string{broker},
+		Topic: topic,
+	})
 
-	message, _ := conn.ReadMessage(1e3)
-	fmt.Println(string(message.Value))
+	for {
+		msg, err := r.ReadMessage(ctx)
+		if err != nil {
+			panic("could not read message " + err.Error())
+		}
+	fmt.Println("received: ", string(msg.Value))		
+	}
 }
