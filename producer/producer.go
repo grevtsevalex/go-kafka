@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"time"
 	"github.com/segmentio/kafka-go"
 	"net/http"
 	"errors"
@@ -16,21 +15,21 @@ const (
 	broker = "localhost:9092"
 )
 
-func writeToKafka(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func writeToKafka(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("could not read body: %s\n", err)
 	}
-	w := kafka.NewWriter(kafka.WriterConfig{
+	wr:= kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{broker},
 		Topic: topic,
 	})
-	err := w.WriteMessages(ctx, kafka.Message{
-		Key: []byte(strconv.Itoa(i)),
-		Value: []byte("this is message" + body),
+	wrErr := wr.WriteMessages(ctx, kafka.Message{
+		Value: []byte("this is message" + string(body)),
 	})
-	if err != nil {
-		panic("could not write message " + err.Error())
+	if wrErr != nil {
+		panic("could not write message " + wrErr.Error())
 	}
 }
 
@@ -38,7 +37,7 @@ func main() {
 	http.HandleFunc("/write", writeToKafka)
 
 	err := http.ListenAndServe(":3333", nil)
-  if errors.Is(err, http.ErrServerClosed) {
+    if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 	} else if err != nil {
 		fmt.Printf("error starting server: %s\n", err)
